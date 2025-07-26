@@ -42,46 +42,71 @@ export function OnboardingFlow({ user, onComplete }: OnboardingFlowProps) {
 
     setIsLoading(true);
     try {
+      console.log('🚀 Starting team creation process...');
+      console.log('User:', user);
+      
       const organizationId = generateId('org');
       const teamId = generateId('team');
       const invitationCode = generateInvitationCode();
 
+      console.log('Generated IDs:', { organizationId, teamId, invitationCode });
+
       // First, create the organization
-      await blink.db.organizations.create({
+      console.log('📝 Creating organization...');
+      const orgData = {
         id: organizationId,
         name: `Organisation de ${user.displayName}`,
-        created_by: user.id,
-      });
+      };
+      console.log('Organization data:', orgData);
+      
+      await blink.db.organizations.create(orgData);
+      console.log('✅ Organization created successfully');
 
       // Then create the team
-      await blink.db.teams.create({
+      console.log('📝 Creating team...');
+      const teamData = {
         id: teamId,
         name: createTeamForm.name.trim(),
         description: createTeamForm.description?.trim() || null,
         organization_id: organizationId,
         invitation_code: invitationCode,
         created_by: user.id,
-      });
+      };
+      console.log('Team data:', teamData);
+      
+      await blink.db.teams.create(teamData);
+      console.log('✅ Team created successfully');
 
       // Add user as team admin
-      await blink.db.team_members.create({
+      console.log('📝 Adding user as team admin...');
+      const memberData = {
         id: generateId('member'),
         team_id: teamId,
         user_id: user.id,
         role: 'team_admin',
-      });
+      };
+      console.log('Member data:', memberData);
+      
+      await blink.db.team_members.create(memberData);
+      console.log('✅ Team member added successfully');
 
       toast({
         title: "Équipe créée !",
         description: `L'équipe "${createTeamForm.name}" a été créée avec succès.`,
       });
 
+      console.log('🎉 Team creation completed successfully');
       onComplete();
     } catch (error) {
-      console.error('Error creating team:', error);
+      console.error('❌ Error creating team:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       toast({
         title: "Erreur",
-        description: "Impossible de créer l'équipe. Veuillez réessayer.",
+        description: `Impossible de créer l'équipe: ${error.message}`,
         variant: "destructive",
       });
     } finally {

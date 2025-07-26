@@ -67,10 +67,21 @@ export default function App() {
       const teamIds = memberships.map(m => m.team_id)
       console.log('🆔 Team IDs to load:', teamIds)
       
-      const teamData = await blink.db.teams.list({
-        where: { id: { in: teamIds } }
-      })
-      console.log('✅ Team data loaded:', teamData)
+      // Load teams one by one to avoid issues with 'in' clause
+      const teamData = []
+      for (const teamId of teamIds) {
+        console.log(`🔍 Loading team: ${teamId}`)
+        const teams = await blink.db.teams.list({
+          where: { id: teamId }
+        })
+        if (teams.length > 0) {
+          teamData.push(teams[0])
+          console.log(`✅ Team loaded: ${teams[0].name}`)
+        } else {
+          console.log(`❌ Team not found: ${teamId}`)
+        }
+      }
+      console.log('✅ All team data loaded:', teamData)
 
       // Combine team data with user roles
       const teamsWithRoles: TeamWithRole[] = teamData.map(team => {
@@ -89,6 +100,11 @@ export default function App() {
       if (teamsWithRoles.length > 0) {
         setCurrentTeam(teamsWithRoles[0])
         console.log('🎯 Current team set:', teamsWithRoles[0])
+        setNeedsOnboarding(false)
+      } else {
+        console.log('❌ No teams found after loading - requiring onboarding')
+        setNeedsOnboarding(true)
+        setCurrentTeam(null)
       }
 
       console.log('🎉 User data loading completed successfully!')
@@ -126,8 +142,17 @@ export default function App() {
     console.log('🎯 Onboarding completed - reloading user data...')
     setNeedsOnboarding(false)
     setLoading(true)
+    
+    // Force reload user data
     if (user) {
-      await loadUserData(user)
+      try {
+        await loadUserData(user)
+      } catch (error) {
+        console.error('❌ Error reloading user data:', error)
+        // If there's an error, reset to onboarding
+        setNeedsOnboarding(true)
+        setLoading(false)
+      }
     }
   }
 

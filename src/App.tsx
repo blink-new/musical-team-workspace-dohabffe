@@ -18,37 +18,59 @@ export default function App() {
 
   const loadUserData = useCallback(async (user: any) => {
     try {
-      // Check if user profile exists
-      const profiles = await blink.db.user_profiles.list({
-        where: { user_id: user.id }
-      })
+      console.log('🔄 Loading user data for:', user.id)
+      console.log('👤 User object:', user)
 
-      if (profiles.length === 0) {
-        setNeedsOnboarding(true)
-        setLoading(false)
-        return
+      // Check if user exists in our database
+      console.log('📋 Checking user in database...')
+      const users = await blink.db.users.list({
+        where: { id: user.id }
+      })
+      console.log('✅ Users found:', users)
+
+      if (users.length === 0) {
+        console.log('❌ User not found in database - creating user record...')
+        // Create user record
+        const newUser = await blink.db.users.create({
+          id: user.id,
+          email: user.email,
+          display_name: user.displayName || user.email,
+          first_name: user.firstName || '',
+          last_name: user.lastName || '',
+          avatar_url: user.avatarUrl || ''
+        })
+        console.log('✅ User record created:', newUser)
+        setUserProfile(newUser)
+      } else {
+        setUserProfile(users[0])
+        console.log('✅ User profile set:', users[0])
       }
 
-      setUserProfile(profiles[0])
-
       // Load user's teams with roles
+      console.log('🏢 Loading team memberships...')
       const memberships = await blink.db.team_members.list({
         where: { 
           user_id: user.id
         }
       })
+      console.log('✅ Team memberships found:', memberships)
 
       if (memberships.length === 0) {
+        console.log('❌ No team memberships found - onboarding required')
         setNeedsOnboarding(true)
         setLoading(false)
         return
       }
 
       // Get team details for each membership
+      console.log('📋 Loading team details...')
       const teamIds = memberships.map(m => m.team_id)
+      console.log('🆔 Team IDs to load:', teamIds)
+      
       const teamData = await blink.db.teams.list({
         where: { id: { in: teamIds } }
       })
+      console.log('✅ Team data loaded:', teamData)
 
       // Combine team data with user roles
       const teamsWithRoles: TeamWithRole[] = teamData.map(team => {
@@ -59,19 +81,28 @@ export default function App() {
           invitation_code: team.invitation_code
         }
       })
+      console.log('🎭 Teams with roles:', teamsWithRoles)
 
       setTeams(teamsWithRoles)
       
       // Set first team as current if none selected
       if (teamsWithRoles.length > 0) {
         setCurrentTeam(teamsWithRoles[0])
+        console.log('🎯 Current team set:', teamsWithRoles[0])
       }
 
+      console.log('🎉 User data loading completed successfully!')
+
     } catch (error) {
-      console.error('Error loading user data:', error)
+      console.error('❌ Error loading user data:', error)
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      })
       toast({
         title: "Erreur",
-        description: "Impossible de charger vos données utilisateur",
+        description: `Impossible de charger vos données utilisateur: ${error.message}`,
         variant: "destructive"
       })
     } finally {

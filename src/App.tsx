@@ -19,8 +19,8 @@ export default function App() {
   const loadUserData = useCallback(async (user: any) => {
     try {
       // Check if user profile exists
-      const profiles = await blink.db.userProfiles.list({
-        where: { userId: user.id }
+      const profiles = await blink.db.user_profiles.list({
+        where: { user_id: user.id }
       })
 
       if (profiles.length === 0) {
@@ -32,12 +32,9 @@ export default function App() {
       setUserProfile(profiles[0])
 
       // Load user's teams with roles
-      const memberships = await blink.db.teamMemberships.list({
+      const memberships = await blink.db.team_members.list({
         where: { 
-          AND: [
-            { userId: user.id },
-            { isActive: "1" }
-          ]
+          user_id: user.id
         }
       })
 
@@ -48,17 +45,18 @@ export default function App() {
       }
 
       // Get team details for each membership
-      const teamIds = memberships.map(m => m.teamId)
+      const teamIds = memberships.map(m => m.team_id)
       const teamData = await blink.db.teams.list({
         where: { id: { in: teamIds } }
       })
 
       // Combine team data with user roles
       const teamsWithRoles: TeamWithRole[] = teamData.map(team => {
-        const membership = memberships.find(m => m.teamId === team.id)
+        const membership = memberships.find(m => m.team_id === team.id)
         return {
           ...team,
-          userRole: membership!.role
+          userRole: membership!.role,
+          invitation_code: team.invitation_code
         }
       })
 

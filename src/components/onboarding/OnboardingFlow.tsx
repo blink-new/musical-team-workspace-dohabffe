@@ -42,24 +42,32 @@ export function OnboardingFlow({ user, onComplete }: OnboardingFlowProps) {
 
     setIsLoading(true);
     try {
+      const organizationId = generateId('org');
       const teamId = generateId('team');
       const invitationCode = generateInvitationCode();
 
-      // Create the team
+      // First, create the organization
+      await blink.db.organizations.create({
+        id: organizationId,
+        name: `Organisation de ${user.displayName}`,
+        created_by: user.id,
+      });
+
+      // Then create the team
       await blink.db.teams.create({
         id: teamId,
         name: createTeamForm.name.trim(),
         description: createTeamForm.description?.trim() || null,
-        organizationId: 'org_default',
-        invitationCode,
-        createdBy: user.id,
+        organization_id: organizationId,
+        invitation_code: invitationCode,
+        created_by: user.id,
       });
 
       // Add user as team admin
-      await blink.db.teamMembers.create({
+      await blink.db.team_members.create({
         id: generateId('member'),
-        teamId,
-        userId: user.id,
+        team_id: teamId,
+        user_id: user.id,
         role: 'team_admin',
       });
 
@@ -96,7 +104,7 @@ export function OnboardingFlow({ user, onComplete }: OnboardingFlowProps) {
     try {
       // Find team by invitation code
       const teams = await blink.db.teams.list({
-        where: { invitationCode: joinTeamForm.invitationCode.trim().toUpperCase() },
+        where: { invitation_code: joinTeamForm.invitationCode.trim().toUpperCase() },
         limit: 1,
       });
 
@@ -112,10 +120,10 @@ export function OnboardingFlow({ user, onComplete }: OnboardingFlowProps) {
       const team = teams[0];
 
       // Check if user is already a member
-      const existingMembership = await blink.db.teamMembers.list({
+      const existingMembership = await blink.db.team_members.list({
         where: { 
-          teamId: team.id,
-          userId: user.id 
+          team_id: team.id,
+          user_id: user.id 
         },
         limit: 1,
       });
@@ -130,10 +138,10 @@ export function OnboardingFlow({ user, onComplete }: OnboardingFlowProps) {
       }
 
       // Add user as team member
-      await blink.db.teamMembers.create({
+      await blink.db.team_members.create({
         id: generateId('member'),
-        teamId: team.id,
-        userId: user.id,
+        team_id: team.id,
+        user_id: user.id,
         role: 'member',
       });
 

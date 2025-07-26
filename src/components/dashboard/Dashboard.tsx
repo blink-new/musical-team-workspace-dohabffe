@@ -36,15 +36,15 @@ export function Dashboard({ currentTeam, user }: DashboardProps) {
     try {
       // Load upcoming assignments for the current team
       const teamAssignments = await blink.db.assignments.list({
-        where: { teamId: currentTeam.id },
-        orderBy: { assignmentDate: 'asc' },
+        where: { team_id: currentTeam.id },
+        orderBy: { assignment_date: 'asc' },
         limit: 10
       })
 
       // Filter to show only future assignments
       const now = new Date()
       const upcomingAssignments = teamAssignments.filter(assignment => {
-        const assignmentDateTime = new Date(`${assignment.assignmentDate}T${assignment.startTime}`)
+        const assignmentDateTime = new Date(`${assignment.assignment_date}T${assignment.start_time}`)
         return assignmentDateTime >= now
       })
 
@@ -56,8 +56,8 @@ export function Dashboard({ currentTeam, user }: DashboardProps) {
         const userPresences = await blink.db.presences.list({
           where: {
             AND: [
-              { userId: user.id },
-              { assignmentId: { in: assignmentIds } }
+              { user_id: user.id },
+              { assignment_id: { in: assignmentIds } }
             ]
           }
         })
@@ -84,27 +84,27 @@ export function Dashboard({ currentTeam, user }: DashboardProps) {
   const updatePresence = async (assignmentId: string, status: 'present' | 'absent' | 'late', justification?: string) => {
     try {
       // Check if presence already exists
-      const existingPresence = presences.find(p => p.assignmentId === assignmentId)
+      const existingPresence = presences.find(p => p.assignment_id === assignmentId)
       
       if (existingPresence) {
         // Update existing presence
         await blink.db.presences.update(existingPresence.id, {
           status,
           justification: justification || null,
-          declaredBy: user.id,
-          declaredAt: new Date().toISOString()
+          declared_by: user.id,
+          declared_at: new Date().toISOString()
         })
       } else {
         // Create new presence
         await blink.db.presences.create({
           id: `presence_${Date.now()}`,
-          assignmentId,
-          userId: user.id,
+          assignment_id: assignmentId,
+          user_id: user.id,
           status,
           justification: justification || null,
-          declaredBy: user.id,
-          declaredAt: new Date().toISOString(),
-          adminOverride: false
+          declared_by: user.id,
+          declared_at: new Date().toISOString(),
+          admin_override: false
         })
       }
 
@@ -113,8 +113,8 @@ export function Dashboard({ currentTeam, user }: DashboardProps) {
       const userPresences = await blink.db.presences.list({
         where: {
           AND: [
-            { userId: user.id },
-            { assignmentId: { in: assignmentIds } }
+            { user_id: user.id },
+            { assignment_id: { in: assignmentIds } }
           ]
         }
       })
@@ -135,7 +135,7 @@ export function Dashboard({ currentTeam, user }: DashboardProps) {
   }
 
   const getPresenceStatus = (assignmentId: string) => {
-    return presences.find(p => p.assignmentId === assignmentId)
+    return presences.find(p => p.assignment_id === assignmentId)
   }
 
   const getDateLabel = (dateString: string) => {
@@ -292,13 +292,13 @@ export function Dashboard({ currentTeam, user }: DashboardProps) {
                             <div className="flex items-center space-x-2">
                               <h3 className="font-semibold">{assignment.title}</h3>
                               <Badge variant="outline">
-                                {getDateLabel(assignment.assignmentDate)}
+                                {getDateLabel(assignment.assignment_date)}
                               </Badge>
                             </div>
                             <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                               <div className="flex items-center space-x-1">
                                 <Clock className="h-4 w-4" />
-                                <span>{assignment.startTime} - {assignment.endTime}</span>
+                                <span>{assignment.start_time} - {assignment.end_time}</span>
                               </div>
                               {assignment.location && (
                                 <div className="flex items-center space-x-1">
@@ -417,7 +417,7 @@ export function Dashboard({ currentTeam, user }: DashboardProps) {
                 <CardContent>
                   <div className="text-center">
                     <div className="bg-muted p-3 rounded-lg font-mono text-lg font-bold mb-2">
-                      {currentTeam.invitationCode}
+                      {currentTeam.invitation_code}
                     </div>
                     <Button variant="outline" size="sm">
                       Copier le code

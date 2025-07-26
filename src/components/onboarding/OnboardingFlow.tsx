@@ -96,7 +96,12 @@ export function OnboardingFlow({ user, onComplete }: OnboardingFlowProps) {
       });
 
       console.log('🎉 Team creation completed successfully');
-      onComplete();
+      
+      // Small delay to ensure database consistency
+      setTimeout(() => {
+        console.log('🔄 Calling onComplete after delay...');
+        onComplete();
+      }, 1000);
     } catch (error) {
       console.error('❌ Error creating team:', error);
       console.error('Error details:', {
@@ -175,7 +180,11 @@ export function OnboardingFlow({ user, onComplete }: OnboardingFlowProps) {
         description: `Vous avez rejoint l'équipe "${team.name}" avec succès.`,
       });
 
-      onComplete();
+      // Small delay to ensure database consistency
+      setTimeout(() => {
+        console.log('🔄 Calling onComplete after joining team...');
+        onComplete();
+      }, 1000);
     } catch (error) {
       console.error('Error joining team:', error);
       toast({

@@ -122,10 +122,12 @@ export default function App() {
     return unsubscribe
   }, [loadUserData])
 
-  const handleOnboardingComplete = () => {
+  const handleOnboardingComplete = async () => {
+    console.log('🎯 Onboarding completed - reloading user data...')
     setNeedsOnboarding(false)
+    setLoading(true)
     if (user) {
-      loadUserData(user)
+      await loadUserData(user)
     }
   }
 
